@@ -7,8 +7,8 @@ RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 ENV FUSEKI_VERSION=4.10.0
 ENV FUSEKI_HOME=/fuseki
 
-# Download and extract Fuseki
-RUN wget -O fuseki.tar.gz https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-${FUSEKI_VERSION}.tar.gz && \
+# Download and extract Fuseki - using Maven Central repository URL which is more reliable
+RUN wget -O fuseki.tar.gz https://repo.maven.apache.org/maven2/org/apache/jena/apache-jena-fuseki/${FUSEKI_VERSION}/apache-jena-fuseki-${FUSEKI_VERSION}.tar.gz && \
     mkdir -p ${FUSEKI_HOME} && \
     tar -xf fuseki.tar.gz -C ${FUSEKI_HOME} --strip-components=1 && \
     rm fuseki.tar.gz

@@ -1,40 +1,39 @@
 FROM eclipse-temurin:17-jre-jammy
 
-# Install wget to download Fuseki
+# Install wget for downloads
 RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 
 # Set Fuseki version and install directory
 ENV FUSEKI_VERSION=4.10.0
 ENV FUSEKI_HOME=/fuseki
-# Disable JMX to prevent the error and add memory settings
-ENV JAVA_OPTS="-Dcom.sun.management.jmxremote.autodiscovery=false -Dcom.sun.management.jmxremote=false -Djava.rmi.server.hostname=localhost -Xmx1g"
+ENV FUSEKI_BASE=/fuseki-data
+ENV JAVA_OPTS="-Xmx512m -Dlog4j.configurationFile=file:///fuseki/log4j2.properties"
 
-# Download and extract Fuseki - using Maven Central repository URL
+# Download and extract Fuseki
 RUN wget -O fuseki.tar.gz https://repo.maven.apache.org/maven2/org/apache/jena/apache-jena-fuseki/${FUSEKI_VERSION}/apache-jena-fuseki-${FUSEKI_VERSION}.tar.gz && \
     mkdir -p ${FUSEKI_HOME} && \
     tar -xf fuseki.tar.gz -C ${FUSEKI_HOME} --strip-components=1 && \
     rm fuseki.tar.gz
 
-# Set working directory
 WORKDIR /app
 
-# Create directories for app, data and configuration
-RUN mkdir -p /fuseki-data/configuration /fuseki-data/databases /fuseki-data/datasets
+# Create directories
+RUN mkdir -p /fuseki-data/databases /fuseki-data/configuration
 
-# Copy your config template, setup script, and datasets
-COPY config-template.ttl ./
-COPY setup.sh ./
-COPY datasets/ /fuseki-data/datasets/
+# Copy your datasets and scripts
+COPY datasets/ /app/datasets/
+COPY build-config.sh /app/
+RUN chmod +x /app/build-config.sh
 
-# Make the setup script executable
-RUN chmod +x setup.sh
+# Build the configuration
+RUN /app/build-config.sh
 
 # Expose the default Fuseki port
 EXPOSE 3030
 
-# Add Docker healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3030/$/ping || exit 1
+# Create a wrapper script for startup
+RUN echo '#!/bin/bash\njava $JAVA_OPTS -jar /fuseki/fuseki-server.jar --config=/app/config.ttl' > /app/start.sh && \
+    chmod +x /app/start.sh
 
-# Run the setup script
-CMD ["./setup.sh"]
+# Run using the wrapper script 
+CMD ["/app/start.sh"]

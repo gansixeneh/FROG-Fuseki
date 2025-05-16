@@ -6,10 +6,11 @@
   },
   "deploy": {
     "startCommand": "/entrypoint.sh",
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
+    "restartPolicyMaxRetries": 10,
+    "healthcheck": {
+      "enabled": false
+    }
   },
   "envs": {
     "FUSEKI_ADMIN_PASSWORD": {

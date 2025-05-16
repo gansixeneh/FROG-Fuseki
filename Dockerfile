@@ -6,8 +6,8 @@ RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 # Set Fuseki version and install directory
 ENV FUSEKI_VERSION=4.10.0
 ENV FUSEKI_HOME=/fuseki
-# Disable JMX to prevent the error
-ENV JAVA_OPTS="-Dcom.sun.management.jmxremote.autodiscovery=false -Dcom.sun.management.jmxremote=false -Djava.rmi.server.hostname=localhost"
+# Disable JMX to prevent the error and add memory settings
+ENV JAVA_OPTS="-Dcom.sun.management.jmxremote.autodiscovery=false -Dcom.sun.management.jmxremote=false -Djava.rmi.server.hostname=localhost -Xmx1g"
 
 # Download and extract Fuseki - using Maven Central repository URL
 RUN wget -O fuseki.tar.gz https://repo.maven.apache.org/maven2/org/apache/jena/apache-jena-fuseki/${FUSEKI_VERSION}/apache-jena-fuseki-${FUSEKI_VERSION}.tar.gz && \
@@ -31,6 +31,10 @@ RUN chmod +x setup.sh
 
 # Expose the default Fuseki port
 EXPOSE 3030
+
+# Add Docker healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3030/$/ping || exit 1
 
 # Run the setup script
 CMD ["./setup.sh"]

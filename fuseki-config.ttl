@@ -1,0 +1,30 @@
+@prefix :      <#> .
+@prefix fuseki: <http://jena.apache.org/fuseki#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix tdb:   <http://jena.hpl.hp.com/2008/tdb#> .
+@prefix ja:    <http://jena.hpl.hp.com/2005/11/Assembler#> .
+
+# TDB2
+@prefix tdb2:   <http://jena.apache.org/2016/tdb#> .
+
+# Server configuration
+[] rdf:type fuseki:Server ;
+   fuseki:services (
+     # Define endpoints here - will be populated by script
+   ) .
+
+# Define the template for each endpoint
+:template_service_tdb2 rdf:type fuseki:Service ;
+    rdfs:label "TDB2 Service Template" ;
+    fuseki:name "template" ;
+    fuseki:serviceQuery "query" ;
+    fuseki:serviceQuery "sparql" ;
+    fuseki:serviceUpdate "update" ;
+    fuseki:serviceUpload "upload" ;
+    fuseki:serviceReadWriteGraphStore "data" ;
+    fuseki:serviceReadGraphStore "get" ;
+    fuseki:dataset [
+        rdf:type tdb2:DatasetTDB2 ;
+        tdb2:location "DATABASE" ;
+    ] .

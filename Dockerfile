@@ -1,39 +1,39 @@
-FROM eclipse-temurin:17-jre-jammy
+FROM openjdk:11-jre-slim
 
-# Install wget for downloads
-RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+# Set environment variables
+ENV FUSEKI_VERSION=4.8.0
+ENV FUSEKI_HOME=/opt/fuseki
+ENV FUSEKI_BASE=/fuseki-base
+ENV FUSEKI_CONFIG=/fuseki-base/config.ttl
 
-# Set Fuseki version and install directory
-ENV FUSEKI_VERSION=4.10.0
-ENV FUSEKI_HOME=/fuseki
-ENV FUSEKI_BASE=/fuseki-data
-ENV JAVA_OPTS="-Xmx512m -Dlog4j.configurationFile=file:///fuseki/log4j2.properties"
+# Install curl and cleanup
+RUN apt-get update && \
+    apt-get install -y curl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Download and extract Fuseki
-RUN wget -O fuseki.tar.gz https://repo.maven.apache.org/maven2/org/apache/jena/apache-jena-fuseki/${FUSEKI_VERSION}/apache-jena-fuseki-${FUSEKI_VERSION}.tar.gz && \
-    mkdir -p ${FUSEKI_HOME} && \
-    tar -xf fuseki.tar.gz -C ${FUSEKI_HOME} --strip-components=1 && \
-    rm fuseki.tar.gz
-
-WORKDIR /app
+# Download and unpack Fuseki
+RUN mkdir -p $FUSEKI_HOME && \
+    curl -L https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-$FUSEKI_VERSION.tar.gz | \
+    tar -xz --strip-components=1 -C $FUSEKI_HOME
 
 # Create directories
-RUN mkdir -p /fuseki-data/databases /fuseki-data/configuration
+RUN mkdir -p $FUSEKI_BASE/databases $FUSEKI_BASE/configuration $FUSEKI_BASE/system_files
 
-# Copy your datasets and scripts
-COPY datasets/ /app/datasets/
-COPY build-config.sh /app/
-RUN chmod +x /app/build-config.sh
+# Copy configuration files
+COPY config/fuseki-config.ttl $FUSEKI_CONFIG
+COPY config/shiro.ini $FUSEKI_HOME/shiro.ini
 
-# Build the configuration
-RUN /app/build-config.sh
+# Copy data and scripts
+COPY data /data
+COPY scripts/setup-datasets.sh /setup-datasets.sh
+COPY scripts/entrypoint.sh /entrypoint.sh
+
+# Set permissions
+RUN chmod +x /setup-datasets.sh /entrypoint.sh
 
 # Expose the default Fuseki port
 EXPOSE 3030
 
-# Create a wrapper script for startup
-RUN echo '#!/bin/bash\njava $JAVA_OPTS -jar /fuseki/fuseki-server.jar --config=/app/config.ttl' > /app/start.sh && \
-    chmod +x /app/start.sh
-
-# Run using the wrapper script 
-CMD ["/app/start.sh"]
+# Set the entrypoint
+ENTRYPOINT ["/entrypoint.sh"]

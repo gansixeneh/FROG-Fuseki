@@ -18,19 +18,22 @@ for ENDPOINT in ${ENDPOINTS}; do
     
     if [ -n "${TURTLE_FILES}" ]; then
         echo "Loading data for ${ENDPOINT}..."
-        # Create a temporary file with the list of TTL files
-        TTL_LIST=$(mktemp)
-        find "${DATA_DIR}/${ENDPOINT}" -name "*.ttl" > "${TTL_LIST}"
         
-        # Use Jena's tdb2.tdbloader (trying multiple possible paths)
+        # Instead of using @file syntax, pass files directly to tdbloader
         if [ -x "${JENA_HOME}/bin/tdb2.tdbloader" ]; then
-            "${JENA_HOME}/bin/tdb2.tdbloader" --loc="${DB_DIR}" @"${TTL_LIST}"
+            # Get all TTL files
+            FILES=$(find "${DATA_DIR}/${ENDPOINT}" -name "*.ttl")
+            # Pass them directly to the loader
+            ${JENA_HOME}/bin/tdb2.tdbloader --loc="${DB_DIR}" ${FILES}
         elif [ -x "${FUSEKI_HOME}/bin/tdb2.tdbloader" ]; then
-            "${FUSEKI_HOME}/bin/tdb2.tdbloader" --loc="${DB_DIR}" @"${TTL_LIST}"
+            FILES=$(find "${DATA_DIR}/${ENDPOINT}" -name "*.ttl")
+            ${FUSEKI_HOME}/bin/tdb2.tdbloader --loc="${DB_DIR}" ${FILES}
         elif [ -x "${JENA_HOME}/bin/tdbloader2" ]; then
-            "${JENA_HOME}/bin/tdbloader2" --loc="${DB_DIR}" @"${TTL_LIST}"
+            FILES=$(find "${DATA_DIR}/${ENDPOINT}" -name "*.ttl")
+            ${JENA_HOME}/bin/tdbloader2 --loc="${DB_DIR}" ${FILES}
         elif command -v tdbloader > /dev/null; then
-            tdbloader --loc="${DB_DIR}" @"${TTL_LIST}"
+            FILES=$(find "${DATA_DIR}/${ENDPOINT}" -name "*.ttl")
+            tdbloader --loc="${DB_DIR}" ${FILES}
         else
             # Fallback to direct loading via Fuseki's SPARQL update endpoint
             echo "TDB loader not found. Will load data via SPARQL Update after server start."
@@ -41,7 +44,7 @@ for ENDPOINT in ${ENDPOINTS}; do
 #!/bin/bash
 sleep 5 # Wait for Fuseki to start
 echo "Loading data for ${ENDPOINT} via SPARQL update..."
-for TTL_FILE in \$(cat ${TTL_LIST}); do
+for TTL_FILE in \$(find "${DATA_DIR}/${ENDPOINT}" -name "*.ttl"); do
     echo "Loading \${TTL_FILE}..."
     curl -u admin:${FUSEKI_ADMIN_PASSWORD:-admin} -X POST -H "Content-Type: text/turtle" \
          --data-binary @"\${TTL_FILE}" \
@@ -54,7 +57,6 @@ EOF
             ${LOAD_SCRIPT} &
         fi
         
-        rm "${TTL_LIST}"
         echo "Data loading process initiated for ${ENDPOINT}"
     fi
 done

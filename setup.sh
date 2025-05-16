@@ -16,7 +16,8 @@ for ENDPOINT in $(ls $DATASETS_DIR); do
     # Load TTL files into the TDB2 database
     for TTL_FILE in $(ls $DATASETS_DIR/$ENDPOINT/*.ttl 2>/dev/null); do
       echo "Loading $TTL_FILE into $ENDPOINT dataset..."
-      /fuseki/tdb2.tdbloader --loc=$DB_PATH $TTL_FILE
+      # Pass JAVA_OPTS to the tdbloader command
+      JAVA_OPTS="$JAVA_OPTS" /fuseki/tdb2.tdbloader --loc=$DB_PATH $TTL_FILE
     done
     
     # Add dataset configuration to the config file
@@ -36,5 +37,6 @@ EOT
   fi
 done
 
-# Start Fuseki server with the generated configuration
-exec /fuseki/fuseki-server --config=$CONFIG_FILE
+# Start Fuseki server with the generated configuration and JAVA_OPTS
+# The exec ensures proper signal handling
+exec env JAVA_OPTS="$JAVA_OPTS" /fuseki/fuseki-server --config=$CONFIG_FILE

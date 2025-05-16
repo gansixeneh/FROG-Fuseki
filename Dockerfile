@@ -2,9 +2,12 @@ FROM openjdk:11-jre-slim
 
 # Set environment variables
 ENV FUSEKI_VERSION=5.4.0
+ENV JENA_VERSION=5.4.0
 ENV FUSEKI_HOME=/opt/fuseki
+ENV JENA_HOME=/opt/jena
 ENV FUSEKI_BASE=/fuseki-base
 ENV FUSEKI_CONFIG=/fuseki-base/config.ttl
+ENV PATH="${PATH}:${JENA_HOME}/bin:${FUSEKI_HOME}/bin"
 
 # Install curl and cleanup
 RUN apt-get update && \
@@ -16,6 +19,11 @@ RUN apt-get update && \
 RUN mkdir -p $FUSEKI_HOME && \
     curl -L https://dlcdn.apache.org/jena/binaries/apache-jena-fuseki-$FUSEKI_VERSION.tar.gz | \
     tar -xz --strip-components=1 -C $FUSEKI_HOME
+
+# Download and unpack Jena tools (needed for tdbloader)
+RUN mkdir -p $JENA_HOME && \
+    curl -L https://dlcdn.apache.org/jena/binaries/apache-jena-$JENA_VERSION.tar.gz | \
+    tar -xz --strip-components=1 -C $JENA_HOME
 
 # Create directories
 RUN mkdir -p $FUSEKI_BASE/databases $FUSEKI_BASE/configuration $FUSEKI_BASE/system_files

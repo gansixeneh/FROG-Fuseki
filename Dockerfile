@@ -1,4 +1,4 @@
-FROM openjdk:11-jre-slim
+FROM eclipse-temurin:17-jre-jammy
 
 # Set environment variables
 ENV FUSEKI_VERSION=5.4.0

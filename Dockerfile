@@ -1,7 +1,7 @@
 FROM openjdk:11-jre-slim
 
 # Set environment variables
-ENV FUSEKI_VERSION=4.8.0
+ENV FUSEKI_VERSION=5.4.0
 ENV FUSEKI_HOME=/opt/fuseki
 ENV FUSEKI_BASE=/fuseki-base
 ENV FUSEKI_CONFIG=/fuseki-base/config.ttl
